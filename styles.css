@@ -1,3 +1,11 @@
+body {
+    
+}
+
+h1, h2, h3, h4 {
+    
+}
+
 p {
     line-height: 1.6;
 }
@@ -7,11 +15,19 @@ p {
 }
 
 .navbar-brand {
-    font-family: 'Nunito', sans-serif;
+    
+}
+
+.hero-header {
+    
 }
 
 .hero-img, .contact-form {
     width : 100%
+}
+
+.anchor {
+    padding-top: 50px;
 }
 
 .section-title h2::before, .section-title h2::after {
