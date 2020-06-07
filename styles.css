@@ -1,9 +1,13 @@
+p {
+    line-height: 1.6;
+}
+
 .navbar {
     background-color: white;
 }
 
-p {
-    line-height: 1.6;
+.navbar-brand {
+    font-family: 'Nunito', sans-serif;
 }
 
 .hero-img, .contact-form {
