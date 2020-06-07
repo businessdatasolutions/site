@@ -34,7 +34,7 @@ p {
 content: '';
 width: 50px;
 height: 2px;
-background: #3498db;
+background: #5bc0de;
 display: inline-block;
 }
 
@@ -50,6 +50,6 @@ margin: 0 0 10px 15px;
 box-sizing: border-box;
 }
 
-.service-col {
+.service-col, .contact-col {
     text-align: center;
 }
