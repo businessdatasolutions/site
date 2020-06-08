@@ -14,16 +14,8 @@ p {
     background-color: white;
 }
 
-.navbar-brand {
-    
-}
-
-.hero-header {
-    
-}
-
 .hero-img, .contact-form {
-    width : 100%
+    width : 100%;
 }
 
 .anchor {
@@ -33,11 +25,10 @@ p {
 .tool-img {
     filter: grayscale(100%);
     width: 200px;
-    
 }
 
 .tool-img:hover {
-    filter: grayscale(0%)
+    filter: grayscale(0%);
 }
 
 .section-title h2::before, .section-title h2::after {
