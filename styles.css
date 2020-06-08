@@ -30,6 +30,16 @@ p {
     padding-top: 50px;
 }
 
+.tool-img {
+    filter: grayscale(100%);
+    width: 200px;
+    
+}
+
+.tool-img:hover {
+    filter: grayscale(0%)
+}
+
 .section-title h2::before, .section-title h2::after {
 content: '';
 width: 50px;
