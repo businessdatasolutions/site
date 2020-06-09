@@ -24,7 +24,7 @@ p {
 
 .tool-img {
     filter: grayscale(100%);
-    width: 200px;
+    width: 120px;
 }
 
 .tool-img:hover {
