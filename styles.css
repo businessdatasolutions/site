@@ -1,56 +1,80 @@
 body {
-    
 }
 
-h1, h2, h3, h4 {
-    
+h1,
+h2,
+h3,
+h4 {
 }
 
 p {
-    line-height: 1.6;
+  line-height: 1.6;
 }
 
 .navbar {
-    background-color: white;
+  background-color: white;
 }
 
-.hero-img, .contact-form {
-    width : 100%;
+.company-name-lg {
+  font-family: "Balsamiq Sans", cursive;
+  font-size: 54px;
+}
+
+.company-name-sm {
+  font-family: "Balsamiq Sans", cursive;
+  font-size: 30px;
+}
+
+.first {
+  color: #59c4fd;
+}
+
+.second {
+  color: #354557;
+}
+
+.hero-img,
+.contact-form {
+  width: 100%;
 }
 
 .anchor {
-    padding-top: 50px;
+  padding-top: 50px;
 }
 
 .tool-img {
-    filter: grayscale(100%);
-    width: 120px;
+  filter: grayscale(100%);
+  width: 120px;
 }
 
 .tool-img:hover {
-    filter: grayscale(0%);
+  filter: grayscale(0%);
 }
 
-.section-title h2::before, .section-title h2::after {
-content: '';
-width: 50px;
-height: 2px;
-background: #5bc0de;
-display: inline-block;
+.section-title h2::before,
+.section-title h2::after {
+  content: "";
+  width: 50px;
+  height: 2px;
+  background: #5bc0de;
+  display: inline-block;
 }
 
 .section-title h2::before {
-margin: 0 15px 10px 0;
+  margin: 0 15px 10px 0;
 }
 
 .section-title h2::after {
-margin: 0 0 10px 15px;
+  margin: 0 0 10px 15px;
 }
 
-*, ::after, ::before {
-box-sizing: border-box;
+*,
+::after,
+::before {
+  box-sizing: border-box;
 }
 
-.service-col, .contact-col {
-    text-align: center;
+.service-col,
+.contact-col {
+  text-align: center;
 }
