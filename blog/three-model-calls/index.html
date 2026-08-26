@@ -78,16 +78,27 @@
           </p>
 
           <p>
-            Three Dutch lease providers quote a monthly amount for the same car: €399, €412 and
-            €385. None of those amounts means the same thing. The first includes the delivery fee,
-            the second charges it separately at €695, and the third advertises a price for a trim
-            level you cannot order without a €40 surcharge. Every number on those pages is true, and
-            together they tell a consumer nothing.
+            This project started with an advertisement. A good-looking monthly price for a car I
+            might actually want, and a catch I only found by clicking through to the provider. The
+            most common catch was the mileage: the advertised price assumed 5,000 kilometres a year
+            and the longest available term. Drive a normal 10,000 and the figure moves. Sometimes
+            the advertised price was not even current any more, and the provider's own page quoted
+            considerably more.
           </p>
 
           <p>
-            Plinkie is a comparison site that fixes this. Every night it collects the market, works
-            out one comparable figure per offer, and publishes the arithmetic alongside the answer.
+            Every one of those numbers is defensible on its own. Together they make an offer look
+            like a price when it is really a price under conditions, and the conditions are the part
+            that gets left out.
+          </p>
+
+          <p>
+            Plinkie is a comparison site built around that observation. Two design decisions follow
+            from it directly. Every offer is stored per mileage tier rather than as a single
+            headline figure, so a car appears at the mileage you actually drive instead of at the
+            one that photographs best. And every price carries the moment we last saw it confirmed
+            at the source: after 72 hours without confirmation, the site labels it as unconfirmed
+            rather than showing it as fact.
           </p>
 
           <h2 class="h3 mt-5">What runs at night</h2>
