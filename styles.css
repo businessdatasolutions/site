@@ -80,3 +80,63 @@ p {
 .contact-col {
   text-align: center;
 }
+
+/* --- Blog ------------------------------------------------------------
+   De blogpagina's zijn dezelfde statische opzet als de homepage: Bootstrap
+   van de CDN, geen build-stap. Wat hier bij komt is alleen wat een lopend
+   artikel nodig heeft en een marketingpagina niet: een leesbare regellengte
+   en rust rond de kop. */
+
+.post-body {
+  max-width: 42em; /* ~70 tekens per regel; daarboven raakt een lezer de regel kwijt */
+}
+
+.post-title {
+  font-size: 2.4rem;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+
+.post-meta {
+  color: #6c7a89;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.post-body h2 {
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.post-body p,
+.post-body li {
+  font-size: 1.05rem;
+}
+
+.post-code {
+  background: #f4f6f8;
+  border-left: 3px solid #428fdc;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  font-size: 0.95rem;
+}
+
+.post-note {
+  color: #6c7a89;
+  font-size: 0.9rem;
+  border-top: 1px solid #dfe4ea;
+  padding-top: 1rem;
+  margin-top: 2.5rem;
+}
+
+.post-card {
+  border-bottom: 1px solid #dfe4ea;
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+}
+
+.post-card h2 a {
+  color: #354557;
+}

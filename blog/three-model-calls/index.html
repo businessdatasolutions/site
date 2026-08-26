@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three model calls, and none of them reads a price | Business Data Solutions</title>
+    <meta
+      name="description"
+      content="How we built a nightly agent swarm on Google Cloud that reprices an entire market, and why the agent that finds the small print is not allowed to tell us a number."
+    />
+    <link rel="canonical" href="https://www.businessdatasolutions.nl/blog/three-model-calls/" />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
+      crossorigin="anonymous"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Balsamiq+Sans:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="navbar fixed-top navbar-expand-lg navbar-light">
+        <div class="d-md-none company-name-sm">
+          <a href="/"
+            ><img class="mr-2" src="../../images/logo.png" height="40px" alt="" loading="lazy"
+          /></a>
+          <span class="first">TEN<span class="second">HOVE</span></span>
+        </div>
+        <div class="d-none d-md-block company-name-lg">
+          <a href="/"
+            ><img class="mr-2" src="../../images/logo.png" height="80px" alt="" loading="lazy" />
+          </a>
+          <span class="first">TEN<span class="second">HOVE</span></span>
+        </div>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-toggle="collapse"
+          data-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div
+          class="collapse navbar-collapse"
+          style="font-size: 18px"
+          id="navbarSupportedContent"
+        >
+          <ul
+            class="navbar-nav ml-auto d-flex justify-content-around w-50 align-items-start"
+          >
+            <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="/#services">Services</a></li>
+            <li class="nav-item"><a class="nav-link" href="/#cases">Cases</a></li>
+            <li class="nav-item active"><a class="nav-link" href="/blog/">Blog</a></li>
+            <li class="nav-item"><a class="nav-link" href="/#contact">Contact</a></li>
+          </ul>
+        </div>
+      </header>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-8 post-body">
+          <p class="post-meta mt-5 pt-5">26 August 2026 · Witek ten Hove</p>
+          <h1 class="display-4 post-title">
+            Three model calls, and none of them reads a price
+          </h1>
+          <p class="lead">
+            We built an agent swarm that reprices a market every night on Google Cloud. The part
+            worth writing about is not what the model does. It is where the model is not allowed to
+            go.
+          </p>
+
+          <p>
+            Three Dutch lease providers quote a monthly amount for the same car: €399, €412 and
+            €385. None of those amounts means the same thing. The first includes the delivery fee,
+            the second charges it separately at €695, and the third advertises a price for a trim
+            level you cannot order without a €40 surcharge. Every number on those pages is true, and
+            together they tell a consumer nothing.
+          </p>
+
+          <p>
+            Plinkie is a comparison site that fixes this. Every night it collects the market, works
+            out one comparable figure per offer, and publishes the arithmetic alongside the answer.
+          </p>
+
+          <h2 class="h3 mt-5">What runs at night</h2>
+
+          <p>
+            At 02:00 CET, Cloud Scheduler starts a Cloud Run Job. The job reads a register of
+            sources from Firestore, applies a refresh policy per source, and fans the work out over
+            Pub/Sub, where a failed task lands in a dead-letter topic after three attempts. Scrapers
+            fetch each offer page and store it in Cloud Storage with its SHA-256, so we can always
+            show which bytes a claim came from. The run finishes with a single transactional swap:
+            until the whole set is ready, yesterday's data stays live.
+          </p>
+
+          <p>
+            A recent run took 24 minutes across four sources. Nobody was watching it, which is the
+            entire point of building it this way.
+          </p>
+
+          <h2 class="h3 mt-5">Where the model actually sits</h2>
+
+          <p>
+            The nightly run makes three model calls. Not one of them reads a price off a page.
+          </p>
+
+          <p>
+            Extraction is ordinary code: one adapter module per source, tested against fragments cut
+            from the real page in the real element order. Gemini enters afterwards, to check that
+            code rather than to replace it. <strong>Blind verification</strong> sends the stored
+            HTML snapshot to Gemini 3.7 Flash in a batch job, without showing it what the parser
+            concluded, and only a genuine contradiction reaches a human review queue.
+            <strong>Deduplication</strong> uses <code>gemini-embedding-001</code> to find candidate
+            pairs across providers, after which deterministic rules decide them.
+            <strong>The terms-and-conditions harvest</strong> turns provider PDFs into checkable
+            clauses.
+          </p>
+
+          <p>
+            The pricing engine itself carries no model at all, and it never will. We publish the
+            formula on the site, versioned, with a changelog, so a visitor can redo the sum by hand.
+            A formula that a model might compute differently next Tuesday is not a formula.
+          </p>
+
+          <h2 class="h3 mt-5">What each Google service actually solved</h2>
+
+          <p>
+            The stack was not chosen for a diagram. Each service closed a specific problem, and here
+            is what each one did for us.
+          </p>
+
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th scope="col">Service</th>
+                  <th scope="col">What it solved</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Cloud Run Jobs</strong></td>
+                  <td>
+                    A swarm that runs once a night and scales to zero for the other 23 hours. We pay
+                    for 24 minutes, not for a day.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Batch on the Agent Platform</strong></td>
+                  <td>
+                    Half the token price for work where nobody is waiting. The whole night, models
+                    included, stays under $2.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Cloud DLP</strong></td>
+                  <td>
+                    Personal data removed from an uploaded contract before any model sees the file.
+                    The ordering is the promise, and DLP is what lets us make it.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Google ADK</strong></td>
+                  <td>
+                    <code>LongRunningFunctionTool</code> gave us an agent that pauses on a human
+                    judgement and resumes where it stopped, without us writing a state machine for
+                    it.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Firestore</strong></td>
+                  <td>
+                    A home for the two collections that change outside the run window, which keeps
+                    the nightly job the only writer of the source of truth.
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Pub/Sub</strong></td>
+                  <td>
+                    A dead-letter topic, so one broken source degrades the run instead of ending it.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 class="h3 mt-5">The agent that cannot tell us a number</h2>
+
+          <p>
+            One question defeats a pipeline: where is the answer? Every provider puts "what does an
+            extra kilometre cost" somewhere else on their own site, and moves it when they redesign.
+            We tried a fixed crawl and it broke on contact with reality.
+          </p>
+
+          <p>
+            So we built a scout with Google ADK. It browses the provider's own site, decides whether
+            to go a level deeper, and offers the sentence it believes carries the answer. It runs on
+            Gemini 3.7 Flash in realtime rather than in batch, and that exception is reasoned: a
+            search decides its next request from the previous answer, which a batch job cannot do.
+          </p>
+
+          <p>
+            Here is the part we would like you to look at. The tool the scout calls has this shape:
+          </p>
+
+          <pre class="post-code"><code>leg_vondst_vast(url: str, citaat: str)</code></pre>
+
+          <p>
+            A URL and a quote. There is no value parameter. The scout is structurally incapable of
+            telling us that an extra kilometre costs 6 cents. It can only point at a page and at a
+            sentence on it.
+          </p>
+
+          <p>
+            Deterministic code does the rest. It reads the number out of the quote, checks the unit
+            against the one the question demands, checks the range, refuses a quote containing two
+            candidate numbers, and refuses any quote it cannot find word for word on the page we
+            fetched ourselves. Eight locks in total. Each one exists because a dry run walked around
+            the previous seven, and each one is now a regression test.
+          </p>
+
+          <p>
+            The result is that a model picking the wrong sentence produces a rejection rather than a
+            claim. 3,692 offers on the site now carry a warning about excess, early termination or
+            extra kilometres, and every one of them shows the provider's URL, the literal sentence,
+            and the date we read it. A reader can check any of it at the source in one click.
+          </p>
+
+          <h2 class="h3 mt-5">One choice that went against the grain</h2>
+
+          <p>
+            We started on Cloud SQL and took it out again. Four outages in a row turned out to share
+            one cause: a cold start of 307 to 412 seconds, against a timeout we had set eight
+            seconds too short. The start time is not tunable.
+          </p>
+
+          <p>
+            The honest reading is that we had picked the wrong shape, not a bad product. A managed
+            instance is built to stay warm for traffic that arrives all day. Our writer wakes up
+            once a night, works for 24 minutes, and wants to disappear again. We replaced it with a
+            DuckDB file in Cloud Storage, opened in-process by the job that owns it, and object
+            generation enforces that there is exactly one writer. That removed the VPC peering, the
+            auth-proxy sidecar, the start and stop logic, and the last password in the project.
+          </p>
+
+          <p>
+            If you are building something that genuinely scales to zero, check whether your database
+            does too.
+          </p>
+
+          <h2 class="h3 mt-5">What it cost to learn</h2>
+
+          <p>
+            One failure is worth repeating, because it was quiet. The terms harvest reused a result
+            reader from a neighbouring service, and the two marked their batch lines differently.
+            Every key parsed as an empty string, every line failed to find its document, and the run
+            reported a clean harvest of zero rows after a batch we had already paid for.
+          </p>
+
+          <p>
+            The fix took ten minutes. The lasting fix was a counter in the run report that says how
+            many lines found no document, with the cause printed next to it as soon as the number
+            leaves zero. A system that can fail silently will eventually do it while you are asleep,
+            and 02:00 is exactly when nobody is reading.
+          </p>
+
+          <h2 class="h3 mt-5">Who built this</h2>
+
+          <p>
+            Plinkie is built by
+            <a href="/">Business Data Solutions</a>, a Dutch consulting and training firm that helps
+            organisations put their data to work. This system was built by one person in ten days,
+            runs in two fully separate Google Cloud projects, and costs under $2 per night to
+            operate. The infrastructure is OpenTofu, the services are Python 3.13, and the site is
+            Next.js.
+          </p>
+
+          <p>
+            If you are weighing up where an agent belongs in your own systems, or where it does not,
+            we are happy to think along. You can reach us through the
+            <a href="/#contact">contact form</a>.
+          </p>
+
+          <h2 class="h3 mt-5">Links</h2>
+
+          <ul>
+            <li>
+              <a href="https://web-owsxcee6ka-ez.a.run.app">Plinkie, running on Google Cloud</a>
+              (the interface is Dutch, because the market is Dutch)
+            </li>
+            <li>
+              <a href="https://web-owsxcee6ka-ez.a.run.app/formule"
+                >The published pricing formula</a
+              >
+            </li>
+            <li>
+              <a href="https://github.com/businessdatasolutions/plinkie"
+                >The repository, with the architecture diagram and setup instructions</a
+              >
+            </li>
+          </ul>
+
+          <p class="post-note">
+            We wrote this piece for the purposes of entering the All Things Agentic Hackathon run by
+            Google Cloud and Devpost.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+      integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>
