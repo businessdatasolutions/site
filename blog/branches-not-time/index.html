@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My agents had their own branches. They did not have their own time. | Business Data Solutions</title>
+    <meta
+      name="description"
+      content="I built a code factory: a manager agent that delegates a real backlog to engineers in isolated workspaces. Three things about it were wrong, and only the log said so."
+    />
+    <link rel="canonical" href="https://www.businessdatasolutions.nl/blog/branches-not-time/" />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+      integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk"
+      crossorigin="anonymous"
+    />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Balsamiq+Sans:wght@700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="navbar fixed-top navbar-expand-lg navbar-light">
+        <div class="d-md-none company-name-sm">
+          <a href="/"
+            ><img class="mr-2" src="../../images/logo.png" height="40px" alt="" loading="lazy"
+          /></a>
+          <span class="first">TEN<span class="second">HOVE</span></span>
+        </div>
+        <div class="d-none d-md-block company-name-lg">
+          <a href="/"
+            ><img class="mr-2" src="../../images/logo.png" height="80px" alt="" loading="lazy" />
+          </a>
+          <span class="first">TEN<span class="second">HOVE</span></span>
+        </div>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-toggle="collapse"
+          data-target="#navbarSupportedContent"
+          aria-controls="navbarSupportedContent"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div
+          class="collapse navbar-collapse"
+          style="font-size: 18px"
+          id="navbarSupportedContent"
+        >
+          <ul
+            class="navbar-nav ml-auto d-flex justify-content-around w-50 align-items-start"
+          >
+            <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="/#services">Services</a></li>
+            <li class="nav-item"><a class="nav-link" href="/#cases">Cases</a></li>
+            <li class="nav-item active"><a class="nav-link" href="/blog/">Blog</a></li>
+            <li class="nav-item"><a class="nav-link" href="/#contact">Contact</a></li>
+          </ul>
+        </div>
+      </header>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-8 post-body">
+          <p class="post-meta mt-5 pt-5">30 August 2026 · Witek ten Hove</p>
+          <h1 class="display-4 post-title">
+            My agents had their own branches. They did not have their own time.
+          </h1>
+
+          <p class="lead">
+            I spent a day building a code factory: a manager agent that reads a project's own build plan, works out what can be built in parallel, hands each subtask to an engineer in an isolated workspace, and merges the result behind a test gate.
+          </p>
+
+          <p>
+            It works. Five subtasks built, tested, merged and logged in under a minute, on a backlog that was written weeks before the factory existed.
+          </p>
+
+          <p>
+            Three things about it were wrong on the way there. None of them showed up in the design, in review, or in the tests. All three showed up in the log, and two of them only because I went looking for something else.
+          </p>
+
+          <h2 class="mt-5">What the thing is</h2>
+
+          <p>
+            A manager agent on Google ADK, running <code>gemini-3.7-flash</code>. Six tools: read the graph, read what the human pointed at, delegate, poll, merge, finish. The engineers work in their own <code>git worktree</code> on their own branch, run the tests for the area they touched, and commit. The manager merges to one trial branch, one at a time.
+          </p>
+
+          <p>
+            The design comes from a paper by Geng and Neubig on asynchronous software engineering agents, which measures something worth repeating: two runs on the same repository, the same model, differing only in which files got assigned, scored 8.7% and 34.3%. The expensive decision is not the code. It is what goes out next.
+          </p>
+
+          <p>
+            So that is the decision I gave to the model, and only that one.
+          </p>
+
+          <h2 class="mt-5">One: the plan carries the tasks, not the order</h2>
+
+          <p>
+            The manager was supposed to read the dependency graph out of the build plan. That is a 1,300-line document with 115 open subtasks, written over three weeks by someone who knew exactly what depended on what.
+          </p>
+
+          <p>
+            I searched it for every phrasing I could think of. <strong>One subtask states its dependency in a form a machine can read.</strong> One, in the whole document.
+          </p>
+
+          <p>
+            The order lives in the head of whoever wrote the plan, and a manager cannot get in there. An agent asked to "derive the graph from the plan" will find that single edge, invent the rest, and say nothing about which is which.
+          </p>
+
+          <p>
+            So the edges are now written by hand, per run, in a file the human can see and correct. The builder refuses a run where a subtask has no entry: an empty list means "checked, independent", and a missing entry means "nobody looked". Those are different things, and only one of them is safe.
+          </p>
+
+          <p>
+            The one edge the plan does state is the interesting one. Subtask 7.3 requires four subtasks from another phase that are not part of this run. Every run I have done leaves 7.3 alone and says why on the dashboard. A manager that had guessed the graph would have built it, against a service that does not exist yet.
+          </p>
+
+          <h2 class="mt-5">Two: a guardrail in the prompt is not a guardrail</h2>
+
+          <p>
+            Some files must not be touched by an engineer. The build plan itself is the sharpest case: it holds every checkbox, every log line, and a running total that has to be added up by hand. Two writers on that file is exactly how it went wrong twice in this repository already, and neither time did git say anything, because the two writers touched different lines.
+          </p>
+
+          <p>
+            The first version of the manager's instruction said: do not touch these paths. That reads fine and is worth nothing. A model that can be asked not to do something can be argued into doing it, and the log will show a confident sentence either way.
+          </p>
+
+          <p>
+            The check now runs on the diff, in code, immediately before the merge:
+          </p>
+
+          <pre><code>git diff --name-only base...branch | config.py --stand -</code></pre>
+
+          <p>
+            One match and the run ends. Not a warning, not a retry, not a fix. The reason is not tidiness: once a forbidden file has been touched, I can no longer tell whether the bookkeeping is right, and a factory whose bookkeeping might be wrong is worse than no factory.
+          </p>
+
+          <p>
+            The path matcher has its own test table with 18 cases, and the ones that matter most are the <strong>non</strong>-matches. <code>services/watchdog/BUILDPLAN.md</code> is allowed, because only the one at the root is the status document. A pattern that is too wide stops a run over work that was always fine, and that costs exactly as much as a rule that does not fire.
+          </p>
+
+          <h2 class="mt-5">Three: isolation is not concurrency</h2>
+
+          <p>
+            This is the one I would have shipped.
+          </p>
+
+          <p>
+            Someone asked me a simple question: do the engineers work in their own branches? They do. Own branch, own worktree, visible in <code>git worktree list</code>. I pulled up the log to show it, and the log answered a question I had not asked.
+          </p>
+
+          <pre><code>15:22:02  eng-1  klaar      7.1 done
+15:22:03  eng-2  opgewarmd  worktree on proef/fase7-caid-eng-2</code></pre>
+
+          <p>
+            The first engineer finished before the second one started. The workspaces were isolated, the branches were real, the merges were test-gated, and the whole thing ran one after the other. The engineer loop was synchronous, and nothing in the design, the dashboard or the tests had any opinion about that.
+          </p>
+
+          <p>
+            The paper this is built on is about <em>asynchronous</em> collaboration. Isolation without concurrency is branch-and-merge without the reason for it. And in a demo it would have been a claim I could not support: two lanes side by side on the screen, filling in sequence.
+          </p>
+
+          <p>
+            Engineers now start in their own thread and the manager does not wait. Merging stays sequential, which is not an omission. Integration is one at a time and test-gated precisely so that building can be parallel.
+          </p>
+
+          <p>
+            Afterwards the log interleaves, which is the only way I know to check it:
+          </p>
+
+          <pre><code>15:25:48  eng-2  begonnen
+15:25:48  eng-1  begonnen
+15:25:48  eng-1  toets      groen
+15:25:48  eng-2  toets      ...
+15:25:48  eng-1  commit     d53e7ba
+15:25:48  eng-2  commit     69e2bf1</code></pre>
+
+          <h2 class="mt-5">Why the log could answer at all</h2>
+
+          <p>
+            All three findings came out of one design decision I did get right, and it was the first one I made.
+          </p>
+
+          <p>
+            Every line in the log carries its source. <strong>Reported</strong> is what the agent says about itself: rich, early, and not to be trusted, because an agent that has lost the thread reports progress that is not there. <strong>Measured</strong> is what git says: thin, late, and impossible to fake. A commit exists or it does not.
+          </p>
+
+          <p>
+            The dashboard marks the two differently, and two of its eight warnings fire exactly where they disagree: an engineer that reports three times with no measured change, and silence on both sides past a threshold.
+          </p>
+
+          <p>
+            Finding three was a timestamp comparison between two measured lines. If the log had held only what the agents said about themselves, the answer would have been "yes, both engineers worked on it", and that would have been true and useless.
+          </p>
+
+          <h2 class="mt-5">What this does not show</h2>
+
+          <p>
+            One run, on one repository, on a backlog I chose. The paper behind it measures a spread from +30.7 to −10.5 percentage points <em>between repositories</em>, so a single result sits inside its own noise.
+          </p>
+
+          <p>
+            The headline numbers are worth reading carefully as well. The abstract reports +25.6 percentage points, and that is the weakest of the three models tested. For the strongest model the same table shows +6.1 and +6.0, at roughly two to four times the cost, and the wall-clock goes <strong>up</strong> in every row. Coordination buys accuracy, not speed. Anyone selling you the opposite has not read the runtime column.
+          </p>
+
+          <p>
+            What I can say is narrower and I think more useful: the mechanism runs, the guardrail holds when tested against it, and the two failures I found were both invisible until something ran and wrote down what it actually did.
+          </p>
+
+          <hr class="my-5" />
+
+          <p>
+            Built at <a href="/">Business Data Solutions</a>, a Dutch consulting and training firm that helps organisations put their data to work. The factory runs against Plinkie, a price-comparison system we operate on Google Cloud, so the backlog it builds is a real one.
+          </p>
+
+          <p>
+            If you are working out where an agent belongs in your own delivery process, or where it does not, we are happy to think along. You can reach us through the <a href="/#contact">contact form</a>.
+          </p>
+
+          <h2 class="mt-5">Links</h2>
+
+          <ul>
+            <li>
+              <a href="https://github.com/businessdatasolutions/plinkie"
+                >The repository, with the architecture diagram and setup instructions</a
+              >
+            </li>
+            <li>
+              <a href="https://web-owsxcee6ka-ez.a.run.app"
+                >Plinkie, the system the factory builds, running on Google Cloud</a
+              >
+              (the interface is Dutch, because the market is Dutch)
+            </li>
+            <li>
+              Geng and Neubig, <em>Effective Strategies for Asynchronous Software Engineering
+              Agents</em>, <a href="https://arxiv.org/abs/2603.21489">arXiv:2603.21489</a>
+            </li>
+          </ul>
+
+          <p>
+            We wrote this piece for the purposes of entering the All Things Agentic Hackathon run by Google Cloud and Devpost.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+      integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+      integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"
+      integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI"
+      crossorigin="anonymous"
+    ></script>
+  </body>
+</html>
