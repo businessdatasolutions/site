@@ -1,0 +1,92 @@
+# Deploy: build → staging (automatisch) → productie (na goedkeuring).
+# Ontwerp: docs/superpowers/specs/2026-10-04-ci-cd-staging-prod-design.md
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Tests
+        run: bash tests/run.sh
+
+      - name: Build
+        run: scripts/build.sh _site
+
+      - name: Linkcheck (interne links en ankers)
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --offline
+            --include-fragments
+            --index-files index.html
+            --root-dir ${{ github.workspace }}/_site
+            --no-progress
+            '_site/**/*.html'
+
+      - name: Artifact uploaden
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+          retention-days: 30   # standaard 1 dag; een goedkeuring mag tot 30 dagen wachten
+
+  deploy-staging:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.businessdatasolutions.nl
+    concurrency:
+      group: staging
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Artifact downloaden
+        uses: actions/download-artifact@v8
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/artifact
+
+      - name: Uitpakken
+        run: |
+          mkdir -p "$RUNNER_TEMP/staging"
+          tar -xf "$RUNNER_TEMP/artifact/artifact.tar" -C "$RUNNER_TEMP/staging"
+
+      - name: Staging-omhulsel
+        run: scripts/staging-envelope.sh "$RUNNER_TEMP/staging" staging.businessdatasolutions.nl
+
+      - name: Push naar site-staging
+        env:
+          DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+        run: scripts/push-staging.sh "$RUNNER_TEMP/staging"
+
+  deploy-production:
+    if: github.ref == 'refs/heads/master'
+    needs: [build, deploy-staging]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Publiceren
+        id: deployment
+        uses: actions/deploy-pages@v5
