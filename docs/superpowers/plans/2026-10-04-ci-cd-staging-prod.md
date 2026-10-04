@@ -20,7 +20,7 @@
 - Allowlist van publieke bestanden: `index.html styles.css blog images`.
 - Noindex-meta, letterlijk: `<meta name="robots" content="noindex, nofollow">`.
 - Analytics-markeringen, letterlijk: `<!-- analytics:start -->` en `<!-- analytics:end -->`.
-- Action-versies: `actions/checkout@v7`, `actions/upload-pages-artifact@v5` (met `retention-days: 30`), `actions/download-artifact@v8`, `actions/deploy-pages@v5`, `lycheeverse/lychee-action@v2.9.0` (installeert lychee v0.24.2).
+- Action-versies: `actions/checkout@v7`, `actions/upload-pages-artifact@v5` (met `retention-days: 30`), `actions/download-artifact@v8`, `actions/deploy-pages@v5`, `lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0` (externe action, vastgepind op commit; installeert lychee v0.24.2).
 - Workflowrechten: standaard `contents: read`; alleen `deploy-production` krijgt `pages: write` en `id-token: write`.
 - GitHub-gebruiker van Witek: `witusj`, id `5702329`.
 - **Keur nooit zelf een productie-deploy goed namens Witek.** Goedkeuren is zijn handeling.
@@ -1235,9 +1235,17 @@ gh run list --workflow deploy.yml --limit 3 --json databaseId,status,conclusion,
   --jq '.[] | "\(.databaseId) \(.status) \(.conclusion) \(.createdAt)"'
 ```
 
-Herhaal de laatste regel tot de tweede run zijn `deploy-production` bereikt. Noteer wat er met de eerste run gebeurt: wordt die automatisch geannuleerd (`completed cancelled`), of blijven beide wachten (`waiting`)?
+Herhaal de laatste regel tot de `deploy-production`-job van de tweede run een status heeft: `waiting`, `queued`/`pending`, of `completed cancelled`. Wacht niet tot hij `waiting` wordt: de waarschijnlijkste uitkomst is dat een job die op goedkeuring wacht zijn concurrency-groep vasthoudt, zodat de tweede op `queued` blijft staan zolang de eerste wacht. Kijk de job-status zo na:
 
-Ruim op: vraag Witek de **oudste** nog wachtende run af te wijzen (*Review deployments* → *Reject*) en de nieuwste goed te keuren. Beide bevatten dezelfde code, dus dat is veilig.
+```bash
+for r in $(gh run list --workflow deploy.yml --limit 2 --json databaseId --jq '.[].databaseId'); do
+  echo "$r: $(gh run view "$r" --json jobs --jq '.jobs[] | select(.name=="deploy-production") | .status + " " + .conclusion')"
+done
+```
+
+Noteer welke van de drie uitkomsten optreedt.
+
+Ruim op: vraag Witek de **oudste** run af te wijzen (*Review deployments* → *Reject*). Staat de tweede op `queued`, dan schuift die daarna door naar `waiting`; laat Witek die goedkeuren. Beide bevatten dezelfde code, dus dat is veilig.
 
 - [ ] **Step 4: Leg het gedrag vast in de README**
 
@@ -1247,6 +1255,8 @@ Voeg onder "### Let op" in `README.md` één regel toe die past bij de observati
   `- Wacht er al een goedkeuring en start er een nieuwe run, dan annuleert GitHub de oudere. Keur altijd de nieuwste goed.`
 - Als beide blijven wachten:
   `- Wachten er twee runs op goedkeuring, wijs dan de oudere af en keur de nieuwste goed; anders kan een oudere versie de nieuwere overschrijven.`
+- Als de tweede in de rij blijft staan (`queued`) zolang de eerste wacht:
+  `- Wacht er al een run op goedkeuring, dan staat een nieuwere run daarachter in de rij. Is er inmiddels nieuwer werk, wijs dan de oudste af: de nieuwste schuift door en vraagt opnieuw om goedkeuring. Een derde run annuleert de middelste, zodat altijd de nieuwste overblijft.`
 
 ```bash
 git add README.md

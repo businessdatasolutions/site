@@ -15,5 +15,11 @@ assert_contains "$WF" "cancel-in-progress: false"                 # prod-deploy 
 assert_contains "$WF" "  contents: read"                          # standaard alleen lezen
 assert_count "$WF" "secrets.STAGING_DEPLOY_KEY" 1                 # sleutel alleen in deploy-staging
 assert_count "$WF" "pages: write" 1                               # alleen de prod-job
+# Externe action draait vóór de artifact-upload en kan dus de prod-build raken: vastpinnen op een commit.
+if grep -qE 'uses: lycheeverse/lychee-action@[0-9a-f]{40}( |$)' "$WF"; then
+  pass "lychee-action vastgepind op commit-SHA"
+else
+  fail "lychee-action niet vastgepind op commit-SHA"
+fi
 
 finish

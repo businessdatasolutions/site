@@ -51,6 +51,14 @@ for f in "${pages[@]}"; do
       unless /<meta name="robots" content="noindex/;
   ' "$f"
 done
+
+# Nacontrole: perl -pi slaat een bestand dat het niet kan vervangen over met alleen een waarschuwing.
+for f in "${pages[@]}"; do
+  if ! grep -qF '<meta name="robots" content="noindex' "$f"; then
+    echo "staging-envelope: $f kon niet worden bijgewerkt" >&2
+    exit 1
+  fi
+done
 printf '%s\n' "$HOST" > "$DIR/CNAME"
 touch "$DIR/.nojekyll"
 

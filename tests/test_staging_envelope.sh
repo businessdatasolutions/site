@@ -67,6 +67,23 @@ fixture "$TMP/d"
 echo "<html><head><!-- analytics:end --></head><body></body></html>" > "$TMP/d/half.html"
 assert_fails "analytics:end zonder start" "$ENVELOPE" "$TMP/d" "$HOST"
 
+echo "omhulsel: leeg html-bestand"
+fixture "$TMP/f"
+: > "$TMP/f/leeg.html"
+assert_fails "leeg html-bestand" "$ENVELOPE" "$TMP/f" "$HOST"
+assert_count "$TMP/f/index.html" "$META" 0
+
+echo "omhulsel: pagina die niet bijgewerkt kan worden"
+if [[ $(id -u) -eq 0 ]]; then
+  pass "overgeslagen als root (bestandsrechten gelden dan niet)"
+else
+  fixture "$TMP/g"
+  chmod 555 "$TMP/g/sub"
+  assert_fails "onschrijfbare submap" "$ENVELOPE" "$TMP/g" "$HOST"
+  chmod 755 "$TMP/g/sub"
+  assert_absent "$TMP/g/CNAME"
+fi
+
 echo "omhulsel: ongeldige argumenten"
 fixture "$TMP/e"
 assert_fails "host met https://" "$ENVELOPE" "$TMP/e" "https://$HOST"
