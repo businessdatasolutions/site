@@ -68,16 +68,20 @@ De website gaat opnieuw ontworpen worden. Voordat dat begint, moet er een pijpli
 | `.github/workflows/deploy.yml` | Triggers, jobs, rechten, omgevingen |
 | `scripts/build.sh` | Kopieert de publiceerbare bestanden naar `_site/`. Enige plek waar het redesign later een echte build-stap inhangt |
 | `scripts/staging-envelope.sh <dir> <host>` | Past het staging-omhulsel toe op een uitgepakte build. Lokaal los te draaien en te testen |
+| `scripts/push-staging.sh <dir>` | Pusht een omhulde build als één verse commit naar `site-staging`. Weigert een build zonder staging-omhulsel (geen `CNAME` of een pagina zonder noindex) en een ontbrekende deploy key |
+| `tests/` | Tests voor de drie scripts en de belangrijkste workflow-invarianten; `bash tests/run.sh` draait ze lokaal en in CI |
+| `.gitignore` | `_site/` |
 | `index.html` | Krijgt markeringen `<!-- analytics:start -->` en `<!-- analytics:end -->` rond het Hotjar-blok |
 | `README.md` | Nieuwe sectie "Deployen" (hoe staging en prod werken, hoe goed te keuren, hoe terug te draaien) |
 
 **`build.sh`** neemt mee: `index.html`, `styles.css`, `blog/`, `images/`, plus eventuele toekomstige publieke bestanden die expliciet worden toegevoegd (allowlist, geen denylist). Niet mee: `README.md`, `CNAME`, `docs/`, `scripts/`, `.github/`. Een allowlist zorgt dat een nieuw intern bestand nooit per ongeluk publiek wordt.
 
-**`staging-envelope.sh`** doet drie dingen, in deze volgorde:
+**`staging-envelope.sh`** doet vier dingen, in deze volgorde:
 
 1. In elk `.html`-bestand: alles tussen `<!-- analytics:start -->` en `<!-- analytics:end -->` verwijderen (markeringen inbegrepen).
-2. In elk `.html`-bestand: `<meta name="robots" content="noindex, nofollow">` direct vóór `</head>` invoegen.
+2. In elk `.html`-bestand: `<meta name="robots" content="noindex, nofollow">` direct vóór `</head>` invoegen (niet als die er al staat).
 3. Een bestand `CNAME` met `<host>` schrijven in de root.
+4. Een leeg bestand `.nojekyll` schrijven in de root, zodat Pages in `site-staging` de bestanden niet door Jekyll haalt.
 
 Het script faalt (exit ≠ 0) als een `.html`-bestand geen `</head>` heeft of als er een `analytics:start` zonder bijbehorende `analytics:end` staat. Zo valt een stille mislukking op in plaats van dat staging ongemerkt toch geïndexeerd wordt.
 
@@ -112,13 +116,14 @@ Het privé-deel van de deploy key staat na het aanmaken alleen nog in het secret
 ### 6.2 Jobs
 
 1. **`build`**
+   - `bash tests/run.sh`
    - `scripts/build.sh` → `_site/`
    - Linkcheck met lychee op `_site/`, offline (alleen interne links), root-relatieve links opgelost tegen `_site/`, ankers (`#contact`) gecontroleerd. Een kapotte interne link laat de job falen.
-   - `_site/` uploaden als Pages-artifact.
+   - `_site/` uploaden als Pages-artifact met een bewaartermijn van **30 dagen**. De standaard van `upload-pages-artifact` is 1 dag; een goedkeuring kan tot 30 dagen wachten, en zonder artifact mislukt de prod-deploy.
 2. **`deploy-staging`** (niet bij `pull_request`; omgeving `staging`)
    - Artifact downloaden en uitpakken.
-   - `scripts/staging-envelope.sh _site staging.businessdatasolutions.nl`
-   - Force-push van één verse commit naar `site-staging` / `main` via `STAGING_DEPLOY_KEY`.
+   - `scripts/staging-envelope.sh <map> staging.businessdatasolutions.nl`
+   - `scripts/push-staging.sh <map>`: force-push van één verse commit naar `site-staging` / `main` via `STAGING_DEPLOY_KEY`, met de SSH-hostsleutel van GitHub vastgepind.
    - Concurrency-groep `staging`, een lopende oudere deploy wordt afgebroken.
 3. **`deploy-production`** (alleen als `github.ref == refs/heads/master`, na `deploy-staging`; omgeving `github-pages`)
    - Wacht op goedkeuring via de omgeving.
