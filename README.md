@@ -69,4 +69,5 @@ Zet trackingcode tussen `<!-- analytics:start -->` en `<!-- analytics:end -->`. 
 
 - Maak deze repo niet privé. Op het gratis plan vervalt dan de verplichte goedkeuring en gaat alles direct live.
 - Een goedkeuring kan tot 30 dagen wachten; daarna verlopen de run en het build-artifact.
+- Wacht er al een run op goedkeuring, dan staat een nieuwere run daarachter in de rij. Is er inmiddels nieuwer werk, wijs dan de oudste af: de nieuwste schuift door en vraagt opnieuw om goedkeuring. Een derde run annuleert de middelste, zodat altijd de nieuwste overblijft.
 - Werk nooit in `businessdatasolutions/site-staging`: elke deploy overschrijft die repo.
