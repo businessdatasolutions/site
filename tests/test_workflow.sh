@@ -21,5 +21,6 @@ if grep -qE 'uses: lycheeverse/lychee-action@[0-9a-f]{40}( |$)' "$WF"; then
 else
   fail "lychee-action niet vastgepind op commit-SHA"
 fi
+assert_not_contains "$WF" "ci/pipeline"                           # tijdelijke trigger is weg (spec §8 stap 6)
 
 finish
